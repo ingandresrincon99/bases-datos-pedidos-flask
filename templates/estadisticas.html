@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Estadísticas - PEDIDOS</title>
+
+    <!-- Custom fonts -->
+    <link href="../static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- Custom styles -->
+    <link href="../static/css/sb-admin-2.min.css" rel="stylesheet">
+    <style>
+        .stat-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 10px;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .measure-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        .stat-badge {
+            font-size: 0.8rem;
+        }
+        .frequency-table {
+            font-size: 0.9rem;
+        }
+        .progress {
+            height: 25px;
+            border-radius: 12px;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+        <!-- Sidebar (igual que tu index.html) -->
+        <ul class="navbar-nav bg-gradient-success sidebar sidebar-dark accordion" id="accordionSidebar">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ url_for('index') }}">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    <i class="fas fa-laugh-wink"></i>
+                </div>
+                <div class="sidebar-brand-text mx-3">PEDIDOS</div>
+            </a>
+            <hr class="sidebar-divider my-0">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('index') }}">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider">
+            <li class="nav-item active">
+                <a class="nav-link" href="{{ url_for('estadisticas') }}">
+                    <i class="fas fa-fw fa-chart-bar"></i>
+                    <span>Estadísticas</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('tables') }}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>Tablas</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider d-none d-md-block">
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+        </ul>
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Main Content -->
+            <div id="content">
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+                </nav>
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+                    <!-- Page Heading -->
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">📊 Análisis Estadístico</h1>
+                        <div>
+                            <button class="btn btn-success btn-sm" onclick="cargarTodasEstadisticas()">
+                                <i class="fas fa-sync-alt"></i> Actualizar Datos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabs de Navegación -->
+                    <ul class="nav nav-tabs mb-4" id="estadisticasTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="cuantitativas-tab" data-toggle="tab" href="#cuantitativas" role="tab">
+                                <i class="fas fa-calculator"></i> Variables Cuantitativas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="cualitativas-tab" data-toggle="tab" href="#cualitativas" role="tab">
+                                <i class="fas fa-chart-pie"></i> Variables Cualitativas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="dispersion-tab" data-toggle="tab" href="#dispersion" role="tab">
+                                <i class="fas fa-chart-line"></i> Medidas de Dispersión
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Contenido de las Tabs -->
+                    <div class="tab-content" id="estadisticasTabsContent">
+                        
+                        <!-- TAB 1: Variables Cuantitativas -->
+                        <div class="tab-pane fade show active" id="cuantitativas" role="tabpanel">
+                            <div class="row">
+                                <div class="col-12 mb-4">
+                                    <div class="card shadow">
+                                        <div class="card-header bg-primary text-white">
+                                            <h6 class="m-0 font-weight-bold">
+                                                <i class="fas fa-calculator mr-2"></i>
+                                                Medidas de Tendencia Central - Precios de Productos
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row text-center" id="medidas-tendencia-central">
+                                                <!-- Los datos se cargarán aquí -->
+                                                <div class="col-12 text-center">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="sr-only">Cargando...</span>
+                                                    </div>
+                                                    <p class="mt-2 text-muted">Cargando estadísticas...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Gráfico de Distribución -->
+                                <div class="col-lg-12 mb-4">
+                                    <div class="card shadow">
+                                        <div class="card-header bg-info text-white">
+                                            <h6 class="m-0 font-weight-bold">
+                                                <i class="fas fa-chart-bar mr-2"></i>
+                                                Distribución de Precios
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="chart-container">
+                                                <canvas id="distribucionPreciosChart"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: Variables Cualitativas -->
+                        <div class="tab-pane fade" id="cualitativas" role="tabpanel">
+                            <div class="row">
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card shadow">
+                                        <div class="card-header bg-success text-white">
+                                            <h6 class="m-0 font-weight-bold">
+                                                <i class="fas fa-table mr-2"></i>
+                                                Frecuencia de Categorías
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered frequency-table" id="tabla-categorias">
+                                                    <thead class="bg-light">
+                                                        <tr>
+                                                            <th>Categoría</th>
+                                                            <th>Frecuencia</th>
+                                                            <th>Porcentaje</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="cuerpo-tabla-categorias">
+                                                        <tr>
+                                                            <td colspan="3" class="text-center text-muted">Cargando datos...</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card shadow">
+                                        <div class="card-header bg-warning text-dark">
+                                            <h6 class="m-0 font-weight-bold">
+                                                <i class="fas fa-chart-pie mr-2"></i>
+                                                Formas de Pago
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="chart-container">
+                                                <canvas id="formasPagoChart"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: Medidas de Dispersión -->
+                        <div class="tab-pane fade" id="dispersion" role="tabpanel">
+                            <div class="row">
+                                <div class="col-12 mb-4">
+                                    <div class="card shadow">
+                                        <div class="card-header bg-danger text-white">
+                                            <h6 class="m-0 font-weight-bold">
+                                                <i class="fas fa-chart-line mr-2"></i>
+                                                Medidas de Dispersión - Salarios
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row text-center" id="medidas-dispersion">
+                                                <!-- Los datos se cargarán aquí -->
+                                                <div class="col-12 text-center">
+                                                    <div class="spinner-border text-danger" role="status">
+                                                        <span class="sr-only">Cargando...</span>
+                                                    </div>
+                                                    <p class="mt-2 text-muted">Cargando medidas de dispersión...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Box Plot -->
+                                <div class="col-lg-12 mb-4">
+                                    <div class="card shadow">
+                                        <div class="card-header bg-secondary text-white">
+                                            <h6 class="m-0 font-weight-bold">
+                                                <i class="fas fa-chart-area mr-2"></i>
+                                                Diagrama de Caja - Salarios
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="chart-container">
+                                                <canvas id="boxPlotSalarios"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; PEDIDOS 2024</span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap & JavaScript -->
+    <script src="../static/vendor/jquery/jquery.min.js"></script>
+    <script src="../static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="../static/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="../static/js/sb-admin-2.min.js"></script>
+    <script src="../static/vendor/chart.js/Chart.min.js"></script>
+
+    <!-- Script de Estadísticas -->
+    <script src="../static/js/estadisticas.js"></script>
+
+    <script>
+        // Cargar estadísticas al abrir la página
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarTodasEstadisticas();
+        });
+    </script>
+</body>
+</html>

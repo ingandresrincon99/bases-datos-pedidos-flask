@@ -1,0 +1,154 @@
+Autor: Fabian Andrés Rincón
+
+-- ======================================================
+-- BASE DE DATOS
+-- ======================================================
+
+USE pedidos11;
+
+-- ======================================================
+-- 1. LUGARES
+-- ======================================================
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/lugares.csv'
+INTO TABLE lugares
+CHARACTER SET latin1
+FIELDS TERMINATED BY ';'
+OPTIONALLY ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES
+(Id_Lugar, Nombre_Lugar, Tipo_lugar, @Id_Lugar_Padre)
+SET Id_Lugar_Padre = NULLIF(@Id_Lugar_Padre, '');
+
+-- ======================================================
+-- 2. CLIENTES
+-- ======================================================
+
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/clientes.csv'
+INTO TABLE clientes
+CHARACTER SET latin1
+FIELDS TERMINATED BY ';'
+OPTIONALLY ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES
+(Id_Cliente, Codigo_Cliente, Nombre_Compañia, Id_Contacto, Direccion, Id_lugar, Codigo_postal, Telefono, Fax);
+
+-- ======================================================
+-- 3. DEPARTMENTS
+-- ======================================================
+
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/departments.csv'
+INTO TABLE departments
+FIELDS TERMINATED BY ';'
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(DEPARTMENT_ID, DEPARTMENT_NAME, @MANAGER_ID)
+SET MANAGER_ID = NULLIF(@MANAGER_ID, '');
+
+-- ======================================================
+-- 4. CATEGORIAS
+-- ======================================================
+
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/categorias.csv'
+REPLACE
+INTO TABLE categorias
+FIELDS TERMINATED BY ';'
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(Id_Categoria, Nombre_Categoria, Descripcion);
+
+-- ======================================================
+-- 5. EMPLOYEES
+-- ======================================================
+
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/employees.csv'
+INTO TABLE employees
+FIELDS TERMINATED BY ';'
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(EMPLOYEE_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, @HIRE_DATE, JOB_ID, SALARY,
+ @COMMISSION_PCT, @MANAGER_ID, @DEPARTMENT_ID,
+ @COD_LUGAR_NACE, @COD_LUGAR_VIVE, @COD_LUGAR_TRABAJA)
+SET
+HIRE_DATE = STR_TO_DATE(@HIRE_DATE, '%d/%m/%Y'),
+COMMISSION_PCT = NULLIF(REPLACE(@COMMISSION_PCT, ',', '.'), ''),
+MANAGER_ID = IF(LOWER(@MANAGER_ID)='null' OR @MANAGER_ID='', NULL, @MANAGER_ID),
+DEPARTMENT_ID = IF(LOWER(@DEPARTMENT_ID)='null' OR @DEPARTMENT_ID='', NULL, @DEPARTMENT_ID),
+COD_LUGAR_NACE = IF(LOWER(@COD_LUGAR_NACE)='null' OR @COD_LUGAR_NACE='', NULL, @COD_LUGAR_NACE),
+COD_LUGAR_VIVE = IF(LOWER(@COD_LUGAR_VIVE)='null' OR @COD_LUGAR_VIVE='', NULL, @COD_LUGAR_VIVE),
+COD_LUGAR_TRABAJA = IF(LOWER(@COD_LUGAR_TRABAJA)='null' OR @COD_LUGAR_TRABAJA='', NULL, @COD_LUGAR_TRABAJA);
+
+-- ======================================================
+-- 6. PRODUCTOS
+-- ======================================================
+
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/productos.csv'
+INTO TABLE productos
+FIELDS TERMINATED BY ';'
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(Id_Producto, Nombre_Producto, @Id_Proveedor, @Id_Categoria, @Fecha_Vencimiento,
+ Cantidad_por_Unidad, @Precio_por_Unidad, @Unidades_en_Existencia,
+ @Unidades_Pedidas, @Nivel_de_Nuevo_Pedido, @Suspendido)
+SET
+Id_Proveedor = NULLIF(LOWER(@Id_Proveedor), 'null'),
+Id_Categoria = NULLIF(LOWER(@Id_Categoria), 'null'),
+Fecha_Vencimiento = CASE
+    WHEN @Fecha_Vencimiento = '' OR LOWER(@Fecha_Vencimiento) = 'null'
+    THEN NULL
+    ELSE STR_TO_DATE(@Fecha_Vencimiento, '%d/%m/%Y')
+END,
+Precio_por_Unidad = NULLIF(REPLACE(@Precio_por_Unidad, ',', '.'), ''),
+Unidades_en_Existencia = NULLIF(@Unidades_en_Existencia, ''),
+Unidades_Pedidas = NULLIF(@Unidades_Pedidas, ''),
+Nivel_de_Nuevo_Pedido = NULLIF(@Nivel_de_Nuevo_Pedido, ''),
+Suspendido = NULLIF(@Suspendido, '');
+
+-- ======================================================
+-- 7. PEDIDOS
+-- ======================================================
+
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/pedidos.csv'
+INTO TABLE pedidos
+FIELDS TERMINATED BY ';'
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(Id_Pedido, Id_Cliente, EMPLOYEE_ID, @Fecha_Pedido, @Fecha_Entrega,
+ @Fecha_Envio, Id_Compania_Envios, @Valor_Envio, Forma_Pago)
+SET
+Fecha_Pedido = CASE
+    WHEN @Fecha_Pedido = '' OR LOWER(@Fecha_Pedido) = 'null'
+    THEN NULL
+    ELSE STR_TO_DATE(@Fecha_Pedido, '%d/%m/%Y')
+END,
+Fecha_Entrega = CASE
+    WHEN @Fecha_Entrega = '' OR LOWER(@Fecha_Entrega) = 'null'
+    THEN NULL
+    ELSE STR_TO_DATE(@Fecha_Entrega, '%d/%m/%Y')
+END,
+Fecha_Envio = CASE
+    WHEN @Fecha_Envio = '' OR LOWER(@Fecha_Envio) = 'null'
+    THEN NULL
+    ELSE STR_TO_DATE(@Fecha_Envio, '%d/%m/%Y')
+END,
+Valor_Envio = NULLIF(REPLACE(@Valor_Envio, ',', '.'), '');
+
+-- ======================================================
+-- 8. DETALLES_PEDIDOS
+-- ======================================================
+
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 5.7/Uploads/detalles_pedidos.csv'
+INTO TABLE detalles_pedidos
+FIELDS TERMINATED BY ';'
+ENCLOSED BY '"'
+LINES TERMINATED BY '\r\n'
+IGNORE 1 ROWS
+(Id_pedido, Id_Producto, @Precio_Unidad, @Cantidad, @Descuento, @dummy, @dummy2)
+SET
+    Precio_Unidad = NULLIF(REPLACE(@Precio_Unidad, ',', '.'), ''),
+    Cantidad      = NULLIF(@Cantidad, ''),
+    Descuento     = NULLIF(REPLACE(REPLACE(@Descuento, ',', ''), '..', '.'), '');

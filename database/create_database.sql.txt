@@ -1,0 +1,139 @@
+Autor: Fabian Andrés Rincón
+
+
+CREATE DATABASE IF NOT EXISTS pedidos11;
+-- ==========================
+-- USAR BASE EXISTENTE
+-- ==========================
+USE pedidos11;
+
+-- ========================================================
+-- OPCIÓN 2: BORRAR Y RECREAR TODAS LAS TABLAS (DESDE CERO)
+-- ========================================================
+DROP TABLE IF EXISTS detalles_pedidos;
+DROP TABLE IF EXISTS pedidos;
+DROP TABLE IF EXISTS productos;
+DROP TABLE IF EXISTS clientes;
+DROP TABLE IF EXISTS categorias;
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS departments;
+DROP TABLE IF EXISTS lugares;
+
+-- ==========================
+-- CREACIÓN DE TABLAS
+-- (Se pueden usar en modo 2 o en modo 3 con IF NOT EXISTS)
+-- ==========================
+
+CREATE TABLE IF NOT EXISTS categorias (
+    Id_Categoria INT PRIMARY KEY,
+    Nombre_Categoria VARCHAR(100),
+    Descripcion TEXT
+);
+
+CREATE TABLE IF NOT EXISTS clientes (
+    Id_Cliente INT PRIMARY KEY,
+    Codigo_Cliente VARCHAR(10),
+    Nombre_Compañía VARCHAR(150),
+    Id_Contacto INT,
+    Direccion VARCHAR(200),
+    Id_Lugar INT,
+    Codigo_postal VARCHAR(20),
+    Telefono VARCHAR(50),
+    Fax VARCHAR(50)
+);
+
+CREATE TABLE IF NOT EXISTS departments (
+    DEPARTMENT_ID INT PRIMARY KEY,
+    DEPARTMENT_NAME VARCHAR(100),
+    MANAGER_ID INT
+);
+
+CREATE TABLE IF NOT EXISTS employees (
+    EMPLOYEE_ID INT PRIMARY KEY,
+    FIRST_NAME VARCHAR(50),
+    LAST_NAME VARCHAR(50),
+    EMAIL VARCHAR(100),
+    PHONE_NUMBER VARCHAR(50),
+    HIRE_DATE DATE,
+    JOB_ID VARCHAR(20),
+    SALARY DECIMAL(10,2),
+    COMMISSION_PCT DECIMAL(5,2),
+    MANAGER_ID INT,
+    DEPARTMENT_ID INT,
+    COD_LUGAR_NACE INT,
+    COD_LUGAR_VIVE INT,
+    COD_LUGAR_TRABAJA INT
+);
+
+CREATE TABLE IF NOT EXISTS lugares (
+    Id_Lugar INT PRIMARY KEY,
+    Nombre_Lugar VARCHAR(100),
+    Tipo_Lugar CHAR(1),
+    Id_Lugar_Padre INT NULL
+);
+
+CREATE TABLE IF NOT EXISTS productos (
+    Id_Producto INT PRIMARY KEY,
+    Nombre_Producto VARCHAR(150),
+    Id_Proveedor INT,
+    Id_Categoria INT,
+    Fecha_Vencimiento DATE,
+    Cantidad_por_Unidad VARCHAR(100),
+    Precio_por_Unidad DECIMAL(10,2),
+    Unidades_en_Existencia INT,
+    Unidades_Pedidas INT,
+    Nivel_de_Nuevo_Pedido INT,
+    Suspendido CHAR(1)
+);
+
+CREATE TABLE IF NOT EXISTS pedidos (
+    Id_Pedido INT PRIMARY KEY,
+    Id_Cliente INT,
+    EMPLOYEE_ID INT,
+    Fecha_Pedido DATE,
+    Fecha_Entrega DATE,
+    Fecha_Envio DATE,
+    Id_Compania_Envios INT,
+    Valor_Envio DECIMAL(10,2),
+    Forma_Pago CHAR(1)
+);
+
+CREATE TABLE IF NOT EXISTS detalles_pedidos (
+    Id_pedido INT,
+    Id_Producto INT,
+    Precio_Unidad DECIMAL(10,2),
+    Cantidad INT,
+    Descuento DECIMAL(5,2),
+    PRIMARY KEY (Id_pedido, Id_Producto)
+);
+
+-- ==========================
+-- RESTRICCIONES (del archivo Crea_Restricciones.txt)
+-- ==========================
+ALTER TABLE clientes
+  ADD CONSTRAINT fk_clientes_lugar FOREIGN KEY (Id_Lugar)
+  REFERENCES lugares(Id_Lugar);
+
+ALTER TABLE employees
+  ADD CONSTRAINT fk_employees_department FOREIGN KEY (DEPARTMENT_ID)
+  REFERENCES departments(DEPARTMENT_ID),
+  ADD CONSTRAINT fk_employees_manager FOREIGN KEY (MANAGER_ID)
+  REFERENCES employees(EMPLOYEE_ID);
+
+ALTER TABLE productos
+  ADD CONSTRAINT fk_productos_categoria FOREIGN KEY (Id_Categoria)
+  REFERENCES categorias(Id_Categoria);
+
+ALTER TABLE pedidos
+  ADD CONSTRAINT fk_pedidos_cliente FOREIGN KEY (Id_Cliente)
+  REFERENCES clientes(Id_Cliente),
+  ADD CONSTRAINT fk_pedidos_empleado FOREIGN KEY (EMPLOYEE_ID)
+  REFERENCES employees(EMPLOYEE_ID);
+
+ALTER TABLE detalles_pedidos
+  ADD CONSTRAINT fk_detalles_pedidos_pedido FOREIGN KEY (Id_pedido)
+  REFERENCES pedidos(Id_Pedido),
+  ADD CONSTRAINT fk_detalles_pedidos_producto FOREIGN KEY (Id_Producto)
+  REFERENCES productos(Id_Producto);
+-- ============================================
+

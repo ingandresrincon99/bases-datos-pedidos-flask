@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Perfil - PEDIDOS</title>
+
+    <!-- Custom fonts -->
+    <link href="../static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- Custom styles -->
+    <link href="../static/css/sb-admin-2.min.css" rel="stylesheet">
+</head>
+
+<body id="page-top">
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ url_for('index') }}">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    <i class="fas fa-laugh-wink"></i>
+                </div>
+                <div class="sidebar-brand-text mx-3">PEDIDOS</div>
+            </a>
+            <hr class="sidebar-divider my-0">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('index') }}">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('tables') }}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>Tables</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider d-none d-md-block">
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+        </ul>
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Main Content -->
+            <div id="content">
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+                    
+                    <!-- Page Heading -->
+                    <h1 class="h3 mb-0 text-gray-800">👤 Perfil de Usuario</h1>
+                    
+                    <!-- Botón para volver al dashboard -->
+                    <div class="ml-auto">
+                        <a href="{{ url_for('index') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Volver al Dashboard
+                        </a>
+                    </div>
+                </nav>
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+                    <div class="row justify-content-center">
+                        <div class="col-xl-8 col-lg-10">
+                            <!-- Profile Card -->
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3 bg-primary">
+                                    <h6 class="m-0 font-weight-bold text-white">
+                                        <i class="fas fa-user mr-2"></i>Información del Perfil
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4 text-center">
+                                            <img class="img-fluid rounded-circle mb-3 border" 
+                                                 src="{{ user.avatar }}" 
+                                                 alt="Profile" 
+                                                 style="width: 150px; height: 150px; object-fit: cover;">
+                                            <h4 class="text-gray-900 mb-1">{{ user.name }}</h4>
+                                            <p class="text-primary font-weight-bold">{{ user.role }}</p>
+                                            <span class="badge badge-success">{{ user.department }}</span>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="row mb-3">
+                                                <div class="col-sm-4">
+                                                    <strong class="text-gray-700">Email:</strong>
+                                                </div>
+                                                <div class="col-sm-8">
+                                                    <i class="fas fa-envelope text-primary mr-2"></i>
+                                                    {{ user.email }}
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-sm-4">
+                                                    <strong class="text-gray-700">Teléfono:</strong>
+                                                </div>
+                                                <div class="col-sm-8">
+                                                    <i class="fas fa-phone text-primary mr-2"></i>
+                                                    {{ user.phone }}
+                                                </div>
+                                            </div>
+                                            <div class="row mb-3">
+                                                <div class="col-sm-4">
+                                                    <strong class="text-gray-700">Fecha de Ingreso:</strong>
+                                                </div>
+                                                <div class="col-sm-8">
+                                                    <i class="fas fa-calendar text-primary mr-2"></i>
+                                                    {{ user.join_date }}
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <strong class="text-gray-700">Biografía:</strong>
+                                                    <div class="mt-2 p-3 bg-light rounded">
+                                                        <p class="mb-0 text-gray-800" id="bio-text">{{ user.bio }}</p>
+                                                    </div>
+                                                    <button class="btn btn-primary btn-sm mt-3" onclick="editBio()">
+                                                        <i class="fas fa-edit fa-sm"></i> Editar Biografía
+                                                    </button>
+                                                    
+                                                    <!-- Editor de biografía (oculto inicialmente) -->
+                                                    <div id="bio-edit" class="mt-3" style="display: none;">
+                                                        <textarea class="form-control" id="bio-textarea" rows="4" placeholder="Escribe tu biografía aquí...">{{ user.bio }}</textarea>
+                                                        <div class="mt-2">
+                                                            <button class="btn btn-success btn-sm" onclick="saveBio()">
+                                                                <i class="fas fa-save"></i> Guardar
+                                                            </button>
+                                                            <button class="btn btn-secondary btn-sm" onclick="cancelEdit()">
+                                                                <i class="fas fa-times"></i> Cancelar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stats Card -->
+                            <div class="card shadow">
+                                <div class="card-header py-3 bg-info">
+                                    <h6 class="m-0 font-weight-bold text-white">
+                                        <i class="fas fa-chart-bar mr-2"></i>Estadísticas
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card border-left-primary shadow h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                        Pedidos Gestionados
+                                                    </div>
+                                                    <div class="h5 mb-0 font-weight-bold text-gray-800">1,248</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card border-left-success shadow h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                        Clientes Activos
+                                                    </div>
+                                                    <div class="h5 mb-0 font-weight-bold text-gray-800">89</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card border-left-warning shadow h-100 py-2">
+                                                <div class="card-body">
+                                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                        Productos
+                                                    </div>
+                                                    <div class="h5 mb-0 font-weight-bold text-gray-800">456</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; PEDIDOS 2024</span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap & JavaScript -->
+    <script src="../static/vendor/jquery/jquery.min.js"></script>
+    <script src="../static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="../static/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="../static/js/sb-admin-2.min.js"></script>
+
+    <script>
+        // Funciones para editar biografía
+        function editBio() {
+            document.getElementById('bio-edit').style.display = 'block';
+        }
+
+        function cancelEdit() {
+            document.getElementById('bio-edit').style.display = 'none';
+            // Restaurar texto original
+            document.getElementById('bio-textarea').value = document.getElementById('bio-text').textContent;
+        }
+
+        function saveBio() {
+            const newBio = document.getElementById('bio-textarea').value;
+            document.getElementById('bio-text').textContent = newBio;
+            document.getElementById('bio-edit').style.display = 'none';
+            
+            // Mostrar mensaje de éxito
+            alert('✅ Biografía actualizada correctamente');
+            
+            // Aquí podrías agregar una llamada AJAX para guardar en el servidor
+            // fetch('/api/update-bio', {
+            //     method: 'POST',
+            //     headers: {'Content-Type': 'application/json'},
+            //     body: JSON.stringify({ bio: newBio })
+            // });
+        }
+    </script>
+</body>
+</html>

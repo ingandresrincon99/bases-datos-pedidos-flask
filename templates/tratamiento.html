@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Tratamiento de Datos - PEDIDOS</title>
+
+    <!-- Custom fonts -->
+    <link href="../static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <!-- Custom styles -->
+    <link href="../static/css/sb-admin-2.min.css" rel="stylesheet">
+    <style>
+        .step-card {
+            border-left: 4px solid #1cc88a;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        .step-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .result-card {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .analysis-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-badge {
+            font-size: 0.8rem;
+            margin: 2px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body id="page-top">
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+        <!-- Sidebar Actualizado -->
+        <ul class="navbar-nav bg-gradient-success sidebar sidebar-dark accordion" id="accordionSidebar">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ url_for('index') }}">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    <i class="fas fa-laugh-wink"></i>
+                </div>
+                <div class="sidebar-brand-text mx-3">PEDIDOS</div>
+            </a>
+            <hr class="sidebar-divider my-0">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('index') }}">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('estadisticas') }}">
+                    <i class="fas fa-fw fa-chart-bar"></i>
+                    <span>Estadísticas</span>
+                </a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="{{ url_for('tratamiento') }}">
+                    <i class="fas fa-fw fa-database"></i>
+                    <span>Tratamiento</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('tables') }}">
+                    <i class="fas fa-fw fa-table"></i>
+                    <span>Tablas</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider d-none d-md-block">
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+        </ul>
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Main Content -->
+            <div id="content">
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+                </nav>
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+                    <!-- Page Heading -->
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">🔧 Tratamiento de Datos - PEDIDOS</h1>
+                        <button class="d-none d-sm-inline-block btn btn-sm btn-success shadow-sm" onclick="ejecutarPreprocesamientoCompleto()">
+                            <i class="fas fa-play fa-sm text-white-50"></i> Ejecutar Preprocesamiento Completo
+                        </button>
+                    </div>
+
+                    <!-- Loading -->
+                    <div id="loading" class="loading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Procesando...</span>
+                        </div>
+                        <p class="mt-2">Analizando base de datos...</p>
+                    </div>
+
+                    <!-- Resultados Generales -->
+                    <div id="resultados-generales" class="row" style="display: none;">
+                        <div class="col-12">
+                            <div class="card shadow mb-4">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="m-0 font-weight-bold">
+                                        <i class="fas fa-chart-bar mr-2"></i>Resumen del Preprocesamiento
+                                    </h6>
+                                </div>
+                                <div class="card-body" id="resumen-contenido">
+                                    <!-- Los resultados se cargarán aquí -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Proceso de Preprocesamiento -->
+                    <div class="row">
+                        <!-- Paso 1: Valores Faltantes -->
+                        <div class="col-lg-6">
+                            <div class="card step-card shadow h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="m-0 font-weight-bold">
+                                        <i class="fas fa-search mr-2"></i>1. Valores Faltantes
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Detección y tratamiento de valores nulos</strong></p>
+                                    <p class="small text-muted">Identifica valores NaN en la base de datos PEDIDOS</p>
+                                    
+                                    <button class="btn btn-primary btn-sm mt-2" onclick="detectarValoresNulos()">
+                                        <i class="fas fa-search"></i> Detectar Valores Nulos
+                                    </button>
+                                    
+                                    <button class="btn btn-success btn-sm mt-2 ml-2" onclick="tratarValoresNulos()">
+                                        <i class="fas fa-cog"></i> Tratar Automáticamente
+                                    </button>
+                                    
+                                    <div id="resultado-nulos" class="result-card">
+                                        <p class="text-muted">Ejecuta el análisis para ver resultados...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Paso 2: Valores Atípicos -->
+                        <div class="col-lg-6">
+                            <div class="card step-card shadow h-100">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="m-0 font-weight-bold">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>2. Valores Atípicos
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Detección de outliers con método IQR</strong></p>
+                                    <p class="small text-muted">Analiza salarios, precios y cantidades</p>
+                                    
+                                    <button class="btn btn-warning btn-sm mt-2" onclick="detectarOutliers()">
+                                        <i class="fas fa-chart-box"></i> Detectar Outliers
+                                    </button>
+                                    
+                                    <div id="resultado-outliers" class="result-card">
+                                        <p class="text-muted">Ejecuta el análisis para ver resultados...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Segunda Fila -->
+                    <div class="row mt-4">
+                        <!-- Paso 3: Codificación Variables Categóricas -->
+                        <div class="col-lg-6">
+                            <div class="card step-card shadow h-100">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="m-0 font-weight-bold">
+                                        <i class="fas fa-tags mr-2"></i>3. Codificación Categóricas
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Label Encoding para variables categóricas</strong></p>
+                                    <p class="small text-muted">Convierte cargos, categorías y países a numéricos</p>
+                                    
+                                    <button class="btn btn-info btn-sm mt-2" onclick="codificarCategoricas()">
+                                        <i class="fas fa-code"></i> Aplicar Codificación
+                                    </button>
+                                    
+                                    <div id="resultado-codificacion" class="result-card">
+                                        <p class="text-muted">Ejecuta el análisis para ver resultados...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Paso 4: Normalización -->
+                        <div class="col-lg-6">
+                            <div class="card step-card shadow h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="m-0 font-weight-bold">
+                                        <i class="fas fa-sliders-h mr-2"></i>4. Normalización
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Estandarización de variables numéricas</strong></p>
+                                    <p class="small text-muted">Aplica Standard Scaling y Min-Max Scaling</p>
+                                    
+                                    <button class="btn btn-success btn-sm mt-2" onclick="normalizarDatos()">
+                                        <i class="fas fa-balance-scale"></i> Aplicar Normalización
+                                    </button>
+                                    
+                                    <div id="resultado-normalizacion" class="result-card">
+                                        <p class="text-muted">Ejecuta el análisis para ver resultados...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Análisis Avanzado -->
+                    <div class="row mt-4">
+                        <div class="col-lg-6">
+                            <div class="card shadow">
+                                <div class="card-header bg-gradient-primary text-white">
+                                    <h6 class="m-0 font-weight-bold">
+                                        <i class="fas fa-chart-line mr-2"></i>Análisis de Distribución
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p>Estadísticas descriptivas de salarios y precios</p>
+                                    <button class="btn btn-primary btn-sm" onclick="analizarDistribucion()">
+                                        <i class="fas fa-chart-bar"></i> Analizar Distribución
+                                    </button>
+                                    <div id="resultado-distribucion" class="result-card mt-2">
+                                        <p class="text-muted">Ejecuta el análisis para ver resultados...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="card shadow">
+                                <div class="card-header bg-gradient-info text-white">
+                                    <h6 class="m-0 font-weight-bold">
+                                        <i class="fas fa-project-diagram mr-2"></i>Matriz de Correlación
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p>Relaciones entre variables numéricas</p>
+                                    <button class="btn btn-info btn-sm" onclick="generarMatrizCorrelacion()">
+                                        <i class="fas fa-network-wired"></i> Generar Matriz
+                                    </button>
+                                    <div id="resultado-correlacion" class="result-card mt-2">
+                                        <p class="text-muted">Ejecuta el análisis para ver resultados...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; PEDIDOS 2024</span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap & JavaScript -->
+    <script src="../static/vendor/jquery/jquery.min.js"></script>
+    <script src="../static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="../static/vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="../static/js/sb-admin-2.min.js"></script>
+
+    <script>
+        function mostrarLoading(mostrar) {
+            document.getElementById('loading').style.display = mostrar ? 'block' : 'none';
+        }
+
+        function detectarValoresNulos() {
+            mostrarLoading(true);
+            fetch('/api/tratamiento/valores-nulos')
+                .then(response => response.json())
+                .then(data => {
+                    mostrarLoading(false);
+                    let contenido = '<h6>Valores Nulos por Tabla:</h6>';
+                    for (const [tabla, info] of Object.entries(data)) {
+                        if (info.total_nulos > 0) {
+                            contenido += `<div class="mb-2">
+                                <strong>${tabla}:</strong> ${info.total_nulos} nulos en ${info.total_registros} registros
+                                <br><small class="text-muted">Columnas: ${Object.keys(info.columnas_nulos).join(', ')}</small>
+                            </div>`;
+                        } else if (info.total_nulos === 0) {
+                            contenido += `<div class="mb-2 text-success">
+                                <strong>${tabla}:</strong> ✅ Sin valores nulos
+                            </div>`;
+                        }
+                    }
+                    document.getElementById('resultado-nulos').innerHTML = contenido;
+                })
+                .catch(error => {
+                    mostrarLoading(false);
+                    document.getElementById('resultado-nulos').innerHTML = `<p class="text-danger">Error: ${error}</p>`;
+                });
+        }
+
+        function tratarValoresNulos() {
+            mostrarLoading(true);
+            fetch('/api/tratamiento/tratar-nulos', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    mostrarLoading(false);
+                    if (data.success) {
+                        let contenido = '<h6 class="text-success">✅ Valores Nulos Tratados:</h6>';
+                        for (const [tabla, info] of Object.entries(data.resultados)) {
+                            contenido += `<div class="mb-2">
+                                <strong>${tabla}:</strong> Columnas tratadas: ${info.columnas_tratadas.join(', ')}
+                            </div>`;
+                        }
+                        document.getElementById('resultado-nulos').innerHTML = contenido;
+                    } else {
+                        document.getElementById('resultado-nulos').innerHTML = `<p class="text-danger">Error: ${data.error}</p>`;
+                    }
+                })
+                .catch(error => {
+                    mostrarLoading(false);
+                    document.getElementById('resultado-nulos').innerHTML = `<p class="text-danger">Error: ${error}</p>`;
+                });
+        }
+
+        function detectarOutliers() {
+            mostrarLoading(true);
+            fetch('/api/tratamiento/outliers')
+                .then(response => response.json())
+                .then(data => {
+                    mostrarLoading(false);
+                    let contenido = '<h6>Detección de Outliers:</h6>';
+                    for (const [dataset, info] of Object.entries(data)) {
+                        if (info.outliers_encontrados > 0) {
+                            contenido += `<div class="mb-2">
+                                <strong>${dataset}:</strong> ${info.outliers_encontrados} outliers (${info.porcentaje_outliers}%)
+                                <br><small>Límites: [${info.limite_inferior}, ${info.limite_superior}]</small>
+                            </div>`;
+                        } else {
+                            contenido += `<div class="mb-2 text-success">
+                                <strong>${dataset}:</strong> ✅ Sin outliers detectados
+                            </div>`;
+                        }
+                    }
+                    document.getElementById('resultado-outliers').innerHTML = contenido;
+                })
+                .catch(error => {
+                    mostrarLoading(false);
+                    document.getElementById('resultado-outliers').innerHTML = `<p class="text-danger">Error: ${error}</p>`;
+                });
+        }
+
+        function codificarCategoricas() {
+            mostrarLoading(true);
+            fetch('/api/tratamiento/codificar-categoricas')
+                .then(response => response.json())
+                .then(data => {
+                    mostrarLoading(false);
+                    let contenido = '<h6>Codificación Aplicada:</h6>';
+                    for (const [categoria, info] of Object.entries(data)) {
+                        contenido += `<div class="mb-2">
+                            <strong>${categoria}:</strong> ${info.categorias_originales.length} categorías codificadas
+                            <br><small>Ejemplo: ${info.categorias_originales[0]} → ${info.categorias_codificadas[0]}</small>
+                        </div>`;
+                    }
+                    document.getElementById('resultado-codificacion').innerHTML = contenido;
+                })
+                .catch(error => {
+                    mostrarLoading(false);
+                    document.getElementById('resultado-codificacion').innerHTML = `<p class="text-danger">Error: ${error}</p>`;
+                });
+        }
+
+        function normalizarDatos() {
+            mostrarLoading(true);
+            fetch('/api/tratamiento/normalizar')
+                .then(response => response.json())
+                .then(data => {
+                    mostrarLoading(false);
+                    let contenido = '<h6>Normalización Aplicada:</h6>';
+                    for (const [variable, info] of Object.entries(data)) {
+                        contenido += `<div class="mb-2">
+                            <strong>${variable}:</strong>
+                            <br><small>Original: μ=${info.original_mean}, σ=${info.original_std}</small>
+                            <br><small>Standard: μ=${info.standard_mean}, σ=${info.standard_std}</small>
+                            <br><small>Min-Max: [${info.minmax_min}, ${info.minmax_max}]</small>
+                        </div>`;
+                    }
+                    document.getElementById('resultado-normalizacion').innerHTML = contenido;
+                })
+                .catch(error => {
+                    mostrarLoading(false);
+                    document.getElementById('resultado-normalizacion').innerHTML = `<p class="text-danger">Error: ${error}</p>`;
+                });
+        }
+
+        function analizarDistribucion() {
+            mostrarLoading(true);
+            fetch('/api/tratamiento/analisis-distribucion')
+                .then(response => response.json())
+                .then(data => {
+                    mostrarLoading(false);
+                    let contenido = '<h6>Análisis de Distribución:</h6>';
+                    for (const [variable, info] of Object.entries(data)) {
+                        contenido += `<div class="mb-3">
+                            <strong>${variable}:</strong>
+                            <br><small>Media: ${info.media} | Mediana: ${info.mediana}</small>
+                            <br><small>Asimetría: ${info.asimetria} | Curtosis: ${info.curtosis}</small>
+                            <br><small>Rango: [${info.minimo}, ${info.maximo}]</small>
+                        </div>`;
+                    }
+                    document.getElementById('resultado-distribucion').innerHTML = contenido;
+                })
+                .catch(error => {
+                    mostrarLoading(false);
+                    document.getElementById('resultado-distribucion').innerHTML = `<p class="text-danger">Error: ${error}</p>`;
+                });
+        }
+
+        function generarMatrizCorrelacion() {
+            mostrarLoading(true);
+            fetch('/api/tratamiento/matriz-correlacion')
+                .then(response => response.json())
+                .then(data => {
+                    mostrarLoading(false);
+                    let contenido = '<h6>Matriz de Correlación:</h6>';
+                    if (data.correlaciones_fuertes && data.correlaciones_fuertes.length > 0) {
+                        contenido += '<p><strong>Correlaciones Fuertes:</strong></p>';
+                        data.correlaciones_fuertes.forEach(corr => {
+                            contenido += `<small>${corr.variable1} ↔ ${corr.variable2}: ${corr.correlacion}</small><br>`;
+                        });
+                    } else {
+                        contenido += '<p class="text-success">✅ No se encontraron correlaciones fuertes</p>';
+                    }
+                    document.getElementById('resultado-correlacion').innerHTML = contenido;
+                })
+                .catch(error => {
+                    mostrarLoading(false);
+                    document.getElementById('resultado-correlacion').innerHTML = `<p class="text-danger">Error: ${error}</p>`;
+                });
+        }
+
+        function ejecutarPreprocesamientoCompleto() {
+            mostrarLoading(true);
+            fetch('/api/tratamiento/preprocesamiento-completo', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    mostrarLoading(false);
+                    if (data.success) {
+                        document.getElementById('resultados-generales').style.display = 'block';
+                        let contenido = '<div class="alert alert-success">✅ Preprocesamiento completado exitosamente</div>';
+                        
+                        // Resumen de cada proceso
+                        contenido += '<div class="row">';
+                        contenido += '<div class="col-md-6"><strong>Valores Nulos:</strong> Analizadas ' + Object.keys(data.resultados.valores_nulos).length + ' tablas</div>';
+                        contenido += '<div class="col-md-6"><strong>Outliers:</strong> Detectados en ' + Object.keys(data.resultados.outliers).length + ' datasets</div>';
+                        contenido += '<div class="col-md-6"><strong>Codificación:</strong> ' + Object.keys(data.resultados.codificacion).length + ' categorías procesadas</div>';
+                        contenido += '<div class="col-md-6"><strong>Normalización:</strong> ' + Object.keys(data.resultados.normalizacion).length + ' variables escaladas</div>';
+                        contenido += '</div>';
+                        
+                        document.getElementById('resumen-contenido').innerHTML = contenido;
+                    } else {
+                        document.getElementById('resumen-contenido').innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+                    }
+                })
+                .catch(error => {
+                    mostrarLoading(false);
+                    document.getElementById('resumen-contenido').innerHTML = `<div class="alert alert-danger">Error: ${error}</div>`;
+                });
+        }
+    </script>
+</body>
+</html>
