@@ -79,18 +79,18 @@ Ejecutar la aplicación:
 
 python app.py
 ```
-![Dashboard](docs/images/dashboard_1)
-![Dashboard](docs/images/dashboard_2)
-![Dashboard](docs/images/dashboard_3)
-![Dashboard](docs/images/dashboard_4)
-![Dashboard](docs/images/dashboard_5)
-![Dashboard](docs/images/dashboard_6)
+![Dashboard](docs/images/dashboard_1.png)
+![Dashboard](docs/images/dashboard_2.png)
+![Dashboard](docs/images/dashboard_3.png)
+![Dashboard](docs/images/dashboard_4.png)
+![Dashboard](docs/images/dashboard_5.png)
+![Dashboard](docs/images/dashboard_6.png)
 
-![Tratamiento](docs/images/tratamiento_datos_1)
-![Tratamiento](docs/images/tratamiento_datos_2)
+![Tratamiento](docs/images/tratamiento_datos_1.png)
+![Tratamiento](docs/images/tratamiento_datos_2.png)
 
-![Estadisticas Cuantitativas](docs/images/estadisticas_variables_cuantitativas)
-![Estadisticas Cualitativas](docs/images/estadisticas_variables_cualitativas)
-![Medidas de Dispersion](docs/images/medidas_dispersion)
+![Estadisticas Cuantitativas](docs/images/estadisticas_variables_cuantitativas.png)
+![Estadisticas Cualitativas](docs/images/estadisticas_variables_cualitativas.png)
+![Medidas de Dispersion](docs/images/medidas_dispersion.png)
 
-![Tablas](docs/images/tablas)
+![Tablas](docs/images/tablas.png)
