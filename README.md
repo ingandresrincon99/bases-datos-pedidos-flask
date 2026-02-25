@@ -89,8 +89,8 @@ python app.py
 ![Tratamiento](docs/images/tratamiento_datos_1.png)
 ![Tratamiento](docs/images/tratamiento_datos_2.png)
 
-![Estadisticas Cuantitativas](docs/images/estadisticas_variables_cuantitativas.png)
-![Estadisticas Cualitativas](docs/images/estadisticas_variables_cualitativas.png)
-![Medidas de Dispersion](docs/images/medidas_dispersion.png)
+![Estadisticas Cuantitativas](docs/images/Estadísticas(_Variables_Cuantitativas).png)
+![Estadisticas Cualitativas](docs/images/Estadísticas(_Variables_Cualitativas).png)
+![Medidas de Dispersion](docs/images/Estadísticas(_Medidas_de_Dispersión).png)
 
 ![Tablas](docs/images/tablas.png)
