@@ -1,0 +1,343 @@
+# -*- coding: utf-8 -*-
+"""
+Proyecto Saber 11 - Boyacá
+Análisis de brechas educativas y factores asociados al rendimiento.
+Pipeline completo de limpieza, visualización e insights.
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+import plotly.express as px
+warnings.filterwarnings('ignore')
+
+# ==========================================
+# 1. CONFIGURACIÓN GLOBAL
+# ==========================================
+DATA_PATH = "Resultados_únicos_Saber_11.csv"
+OUTPUT_DATA = "saber11_boyaca_limpio.csv"
+
+sns.set_theme(style="whitegrid")
+plt.rcParams['figure.figsize'] = (12, 6)
+plt.rcParams['savefig.dpi'] = 300
+plt.rcParams['savefig.bbox'] = 'tight'
+
+# ==========================================
+# 2. FUNCIONES DE LIMPIEZA Y PREPROCESAMIENTO
+# ==========================================
+
+def remove_duplicates(df):
+    return df.drop_duplicates()
+
+def remove_constant_columns(df):
+    nunique = df.nunique()
+    const_cols = nunique[nunique == 1].index
+    return df.drop(columns=const_cols)
+
+def remove_redundant_columns(df):
+    cols_to_drop = [
+        'COLE_COD_DANE_ESTABLECIMIENTO', 'COLE_COD_DANE_SEDE',
+        'ESTU_COD_RESIDE_DEPTO', 'ESTU_COD_RESIDE_MCPIO',
+        'ESTU_DEPTO_RESIDE', 'ESTU_PAIS_RESIDE', 'ESTU_NACIONALIDAD',
+        'DESEMP_INGLES'
+    ]
+    cols_to_drop = [c for c in cols_to_drop if c in df.columns]
+    return df.drop(columns=cols_to_drop)
+
+def fix_numeric_columns(df):
+    score_cols = ['PUNT_GLOBAL', 'PUNT_MATEMATICAS', 'PUNT_LECTURA_CRITICA',
+                  'PUNT_SOCIALES_CIUDADANAS', 'PUNT_C_NATURALES', 'PUNT_INGLES']
+    for col in score_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+    return df
+
+def filter_boyaca(df):
+    if 'ESTU_DEPTO_PRESENTACION' in df.columns:
+        return df[df['ESTU_DEPTO_PRESENTACION'].str.upper() == 'BOYACA'].copy()
+    return df
+
+def drop_high_missing(df, threshold=0.5):
+    return df.dropna(thresh=len(df)*(1-threshold), axis=1)
+
+def clean_categorical_values(df):
+    obj_cols = df.select_dtypes(include="object").columns
+    df[obj_cols] = df[obj_cols].apply(lambda x: x.str.strip().str.upper())
+    return df
+
+def impute_categorical(df):
+    cat_cols = df.select_dtypes(include='object').columns
+    df[cat_cols] = df[cat_cols].fillna('SIN_DATO')
+    return df
+
+def impute_numeric(df):
+    num_cols = df.select_dtypes(include='number').columns
+    for col in num_cols:
+        df[col] = df[col].fillna(df[col].median())
+    return df
+
+def save_clean_data(df, path):
+    df.to_csv(path, index=False, encoding='utf-8')
+    return df
+
+# ==========================================
+# 3. FUNCIONES DE VISUALIZACIÓN (INSIGHTS)
+# ==========================================
+
+def plot_tech_divide_by_stratum(df):
+    """Brecha digital: acceso a internet dentro de cada estrato"""
+    plt.figure(figsize=(12, 6))
+    ax = sns.barplot(data=df, x='FAMI_ESTRATOVIVIENDA', y='PUNT_GLOBAL',
+                     hue='FAMI_TIENEINTERNET', ci=None, palette='Set2',
+                     order=['ESTRATO 1', 'ESTRATO 2', 'ESTRATO 3', 'ESTRATO 4', 'ESTRATO 5', 'SIN ESTRATO'])
+    plt.title("📡 El acceso a internet impulsa el puntaje, especialmente en estratos bajos", fontweight='bold')
+    plt.xlabel("Estrato socioeconómico")
+    plt.ylabel("Puntaje promedio global")
+    plt.legend(title="¿Tiene Internet?", loc='upper left')
+    for p in ax.patches:
+        if p.get_height() > 0:
+            ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width()/2., p.get_height()),
+                        ha='center', va='center', xytext=(0, 10), textcoords='offset points', fontsize=9)
+    plt.tight_layout()
+    plt.savefig("insight_brecha_digital_estrato.png")
+    plt.close()
+
+def plot_parents_education_comparison(df):
+    """Comparación educación madre vs padre"""
+    edu_mother = df[['FAMI_EDUCACIONMADRE', 'PUNT_GLOBAL']].rename(columns={'FAMI_EDUCACIONMADRE': 'NIVEL'})
+    edu_father = df[['FAMI_EDUCACIONPADRE', 'PUNT_GLOBAL']].rename(columns={'FAMI_EDUCACIONPADRE': 'NIVEL'})
+    edu_mother['PARENTESCO'] = 'Madre'
+    edu_father['PARENTESCO'] = 'Padre'
+    df_edu = pd.concat([edu_mother, edu_father], ignore_index=True)
+    order = ['NINGUNO', 'PRIMARIA INCOMPLETA', 'PRIMARIA COMPLETA',
+             'SECUNDARIA (BACHILLERATO) INCOMPLETA', 'SECUNDARIA (BACHILLERATO) COMPLETA',
+             'TÉCNICA O TECNOLÓGICA INCOMPLETA', 'TÉCNICA O TECNOLÓGICA COMPLETA',
+             'EDUCACIÓN PROFESIONAL INCOMPLETA', 'EDUCACIÓN PROFESIONAL COMPLETA', 'POSTGRADO']
+    plt.figure(figsize=(14, 6))
+    sns.pointplot(data=df_edu, x='NIVEL', y='PUNT_GLOBAL', hue='PARENTESCO',
+                  order=order, dodge=True, markers=['o', 's'], linestyles=['-', '--'], ci=None, palette='Set1')
+    plt.xticks(rotation=45, ha='right')
+    plt.title("👩‍🏫 El nivel educativo de la madre predice mejor el rendimiento que el del padre", fontweight='bold')
+    plt.xlabel("Nivel educativo")
+    plt.ylabel("Puntaje global promedio")
+    plt.tight_layout()
+    plt.savefig("insight_educacion_padres.png")
+    plt.close()
+
+def plot_tech_accumulation(df):
+    """Efecto acumulado de tener computador e internet"""
+    df['acceso_tec'] = 'Solo computador'
+    df.loc[(df['FAMI_TIENECOMPUTADOR']=='SI') & (df['FAMI_TIENEINTERNET']=='SI'), 'acceso_tec'] = 'Computador + Internet'
+    df.loc[(df['FAMI_TIENECOMPUTADOR']=='NO') & (df['FAMI_TIENEINTERNET']=='NO'), 'acceso_tec'] = 'Ninguno'
+    df.loc[(df['FAMI_TIENECOMPUTADOR']=='NO') & (df['FAMI_TIENEINTERNET']=='SI'), 'acceso_tec'] = 'Solo internet'
+    order = ['Ninguno', 'Solo internet', 'Solo computador', 'Computador + Internet']
+    plt.figure(figsize=(12, 6))
+    sns.violinplot(data=df, x='acceso_tec', y='PUNT_GLOBAL', order=order,
+                   palette='viridis', cut=0, inner='quartile')
+    plt.title("📉 La acumulación de recursos tecnológicos multiplica el rendimiento", fontweight='bold')
+    plt.xlabel("Acceso en el hogar")
+    plt.ylabel("Distribución del puntaje global")
+    plt.tight_layout()
+    plt.savefig("insight_acumulacion_tecnologica.png")
+    plt.close()
+
+def plot_correlation_heatmap(df):
+    """Mapa de calor de correlaciones"""
+    numeric_cols = ['PUNT_GLOBAL', 'PUNT_MATEMATICAS', 'PUNT_LECTURA_CRITICA',
+                    'PUNT_SOCIALES_CIUDADANAS', 'PUNT_C_NATURALES', 'PUNT_INGLES']
+    binary_vars = ['FAMI_TIENEINTERNET', 'FAMI_TIENECOMPUTADOR', 'FAMI_TIENELAVADORA', 'FAMI_TIENEAUTOMOVIL']
+    for var in binary_vars:
+        if var in df.columns:
+            df[var + '_BIN'] = (df[var] == 'SI').astype(int)
+            numeric_cols.append(var + '_BIN')
+    corr = df[numeric_cols].corr()
+    plt.figure(figsize=(10, 8))
+    mask = np.triu(np.ones_like(corr, dtype=bool))
+    sns.heatmap(corr, mask=mask, annot=True, fmt='.2f', cmap='coolwarm',
+                square=True, linewidths=.5, cbar_kws={"shrink": 0.8})
+    plt.title("🔍 Internet y computador se correlacionan fuertemente con el puntaje global", fontweight='bold')
+    plt.tight_layout()
+    plt.savefig("insight_correlaciones.png")
+    plt.close()
+
+def plot_municipios_extremos(df):
+    """Top 10 y bottom 10 municipios"""
+    mun_scores = df.groupby('ESTU_MCPIO_RESIDE')['PUNT_GLOBAL'].mean().sort_values()
+    top10 = mun_scores.tail(10).reset_index()
+    bottom10 = mun_scores.head(10).reset_index()
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    sns.barplot(data=top10, y='ESTU_MCPIO_RESIDE', x='PUNT_GLOBAL', ax=axes[0], palette='Greens_d')
+    axes[0].set_title("🏆 Municipios con mejor desempeño", fontweight='bold')
+    axes[0].set_xlabel("Puntaje promedio")
+    axes[0].set_ylabel("")
+    sns.barplot(data=bottom10, y='ESTU_MCPIO_RESIDE', x='PUNT_GLOBAL', ax=axes[1], palette='Reds_d')
+    axes[1].set_title("⚠️ Municipios con mayor rezago educativo", fontweight='bold')
+    axes[1].set_xlabel("Puntaje promedio")
+    axes[1].set_ylabel("")
+    plt.suptitle("Brecha territorial en Boyacá: hasta 100 puntos de diferencia", fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig("insight_municipios_extremos.png")
+    plt.close()
+
+def plot_colegio_naturaleza_by_internet(df):
+    """Comparación colegio público vs privado, segmentado por acceso a internet"""
+    plt.figure(figsize=(12, 6))
+    ax = sns.barplot(data=df, x='COLE_NATURALEZA', y='PUNT_GLOBAL',
+                     hue='FAMI_TIENEINTERNET', ci=None, palette='Set1')
+    plt.title("🏫 El acceso a internet reduce la brecha entre colegio público y privado", fontweight='bold')
+    plt.xlabel("Naturaleza del colegio")
+    plt.ylabel("Puntaje promedio global")
+    plt.legend(title="¿Tiene Internet?", loc='upper left')
+    for p in ax.patches:
+        if p.get_height() > 0:
+            ax.annotate(f'{p.get_height():.0f}', (p.get_x() + p.get_width()/2., p.get_height()),
+                        ha='center', va='center', xytext=(0, 8), textcoords='offset points', fontsize=9)
+    plt.tight_layout()
+    plt.savefig("insight_colegio_publico_privado.png")
+    plt.close()
+
+def plot_hacinamiento_impact(df):
+    """Impacto del número de personas en el hogar"""
+    # Crear categorías de tamaño del hogar y forzar a numérico
+    df['tamano_hogar'] = df['FAMI_PERSONASHOGAR'].replace({
+        'Uno': 1, 'Dos': 2, 'Tres': 3, 'Cuatro': 4, 'Cinco': 5,
+        'Seis': 6, 'Siete': 7, 'Ocho': 8, 'Nueve': 9, 'Diez': 10,
+        'Diez o más': 11, 'Doce o más': 12, '9 o más': 9
+    })
+    
+    # Asegurar que ambas columnas sean de tipo numérico
+    df['tamano_hogar'] = pd.to_numeric(df['tamano_hogar'], errors='coerce')
+    df['PUNT_GLOBAL'] = pd.to_numeric(df['PUNT_GLOBAL'], errors='coerce')
+    
+    # Eliminar posibles nulos en estas columnas para el gráfico
+    df_subset = df.dropna(subset=['tamano_hogar', 'PUNT_GLOBAL'])
+    
+    # Agrupar por tamaño y calcular puntaje medio
+    grouped = df_subset.groupby('tamano_hogar')['PUNT_GLOBAL'].mean().reset_index()
+    
+    plt.figure(figsize=(12, 6))
+    sns.regplot(data=grouped, x='tamano_hogar', y='PUNT_GLOBAL', lowess=True,
+                scatter_kws={'s': 80, 'color': '#2c7fb8'}, line_kws={'color': '#d7301f', 'lw': 3})
+    plt.title("🏠 A mayor número de personas en el hogar, menor rendimiento académico", fontweight='bold')
+    plt.xlabel("Número de miembros en el hogar")
+    plt.ylabel("Puntaje global promedio")
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.tight_layout()
+    plt.savefig("insight_hacinamiento.png")
+    plt.close()
+def plot_boyaca_interactive_map(df):
+    """
+    Mapa interactivo de burbujas con Plotly Express.
+    Limitado a la región de Boyacá.
+    """
+    coords = {
+        'AQUITANIA': (5.6117, -72.8842), 'BELÉN': (5.9833, -72.9000),
+        'BETÉITIVA': (5.8333, -73.0167), 'BOYACÁ': (5.4531, -73.3622),
+        'BUCARAMANGA': (7.1193, -73.1229), 'BUSCANZÁ': (5.5500, -73.0000),
+        'CALDAS': (5.5545, -73.8655), 'CERINZA': (5.9500, -72.9500),
+        'CHIQUINQUIRÁ': (5.6167, -73.8167), 'CORRALES': (5.8333, -72.8333),
+        'CUÍTIVA': (5.5833, -72.9667), 'DUITAMA': (5.8285, -73.0336),
+        'FIRAVITOBA': (5.6639, -72.9833), 'FLORESTA': (5.8667, -72.9167),
+        'GACHANTIVÁ': (5.7500, -73.5333), 'GÁMEZA': (5.8000, -72.8000),
+        'GARAGOA': (5.0000, -73.3667), 'GIRÓN': (7.0683, -73.1700),
+        'IZA': (5.6167, -72.9833), 'LABRANZAGRANDE': (5.5833, -73.1167),
+        'MACANAL': (5.5167, -73.3167), 'MIRAFLORES': (5.6833, -73.0500),
+        'MONGUA': (5.7500, -72.8000), 'MONGUÍ': (5.7167, -72.8500),
+        'MONIQUIRÁ': (5.8761, -73.5728), 'NOBSA': (5.7667, -72.9333),
+        'PAIPA': (5.7667, -73.1167), 'PAJARITO': (5.5833, -73.0667),
+        'PAYA': (5.6167, -72.4167), 'PAZ DE RÍO': (5.9833, -72.7500),
+        'PESCA': (5.5667, -73.0500), 'PISBA': (5.7167, -72.4837),
+        'RAMIRIQUÍ': (5.4000, -73.3333), 'SABOYÁ': (5.7000, -73.7667),
+        'SAN GIL': (6.5531, -73.1328), 'SANTA ROSA DE VITERBO': (5.6833, -73.0167),
+        'SATIVASUR': (6.1667, -72.7333), 'SOATÁ': (6.3333, -72.6833),
+        'SOCOTÁ': (6.0000, -72.7000), 'SOGAMOSO': (5.7243, -72.9389),
+        'SOMONDOCO': (5.5833, -73.4333), 'TASCO': (5.9167, -72.7833),
+        'TIBASOSA': (5.7500, -72.9167), 'TÓPAGA': (5.7667, -72.8333),
+        'TOTA': (5.5594, -72.9639), 'TUNJA': (5.5353, -73.3678),
+        'VENTAQUEMADA': (5.3667, -73.5333), 'YOPAL': (5.3300, -72.3950)
+    }
+    
+    puntaje_mun = df.groupby('ESTU_MCPIO_RESIDE')['PUNT_GLOBAL'].mean().reset_index()
+    puntaje_mun['lat'] = puntaje_mun['ESTU_MCPIO_RESIDE'].map(lambda x: coords.get(x, (None, None))[0])
+    puntaje_mun['lon'] = puntaje_mun['ESTU_MCPIO_RESIDE'].map(lambda x: coords.get(x, (None, None))[1])
+    puntaje_mun = puntaje_mun.dropna(subset=['lat', 'lon'])
+    
+    fig = px.scatter_mapbox(
+        puntaje_mun,
+        lat='lat',
+        lon='lon',
+        size='PUNT_GLOBAL',
+        color='PUNT_GLOBAL',
+        hover_name='ESTU_MCPIO_RESIDE',
+        size_max=25, # Ajusta el tamaño de los círculos si es necesario
+        zoom=8,      # Aumentamos el zoom para centrar más en la región
+        center={"lat": 5.5, "lon": -73.2}, # Centro aproximado de Boyacá
+        color_continuous_scale='RdYlGn',
+        mapbox_style='carto-positron',
+        title='📊 Puntaje promedio Saber 11 por municipio en Boyacá',
+        labels={'PUNT_GLOBAL': 'Puntaje promedio'}
+    )
+    
+    # Restringe los límites del mapa para que el usuario no pueda alejarse demasiado
+    fig.update_layout(
+        mapbox=dict(
+            bearing=0,
+            pitch=0,
+            zoom=8,
+            center={"lat": 5.5, "lon": -73.2},
+            # Límites geográficos aproximados de Boyacá para evitar alejamiento excesivo
+            bounds=dict(
+                west=-74.5,
+                east=-72.0,
+                south=4.6,
+                north=6.8
+            )
+        ),
+        font_family="Arial",
+        title_font_size=16,
+        title_x=0.5,
+        margin=dict(l=0, r=0, t=40, b=0)
+    )
+    
+    fig.write_html("mapa_boyaca_interactivo.html")
+    fig.show()
+    print("✅ Mapa interactivo guardado como 'mapa_boyaca_interactivo.html'")
+# ==========================================
+# 4. PIPELINE PRINCIPAL
+# ==========================================
+
+def process_pipeline(data_path):
+    df = (pd.read_csv(data_path, encoding='utf-8', low_memory=False)
+          .pipe(remove_duplicates)
+          .pipe(remove_constant_columns)
+          .pipe(remove_redundant_columns)
+          .pipe(fix_numeric_columns)
+          .pipe(filter_boyaca)
+          .pipe(drop_high_missing, threshold=0.5)
+          .pipe(clean_categorical_values)
+          .pipe(impute_categorical)
+          .pipe(impute_numeric)
+          .pipe(save_clean_data, OUTPUT_DATA)
+          )
+    # Generar todas las visualizaciones
+    plot_tech_divide_by_stratum(df)
+    plot_parents_education_comparison(df)
+    plot_tech_accumulation(df)
+    plot_correlation_heatmap(df)
+    plot_municipios_extremos(df)
+    plot_colegio_naturaleza_by_internet(df)
+    plot_hacinamiento_impact(df)
+    plot_boyaca_interactive_map(df)
+    return df
+
+# ==========================================
+# 5. EJECUCIÓN
+# ==========================================
+
+if __name__ == "__main__":
+    df_clean = process_pipeline(DATA_PATH)
+    print("✅ Procesamiento completado exitosamente")
+    print(f"✅ Archivo limpio guardado: {OUTPUT_DATA}")
+    print("✅ 7 gráficas de alta calidad guardadas en el directorio actual")
